@@ -4,3 +4,5 @@ revChatGPT==1.2.1
 openai
 tiktoken
 toml
+aiohttp
+asyncio

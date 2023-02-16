@@ -23,7 +23,9 @@ import asyncio
 import chatbot
 from config import Config
 from text_to_img import text_to_image
-
+from stable_diffusion import get_image
+import base64
+import json
 
 config = Config.load_config()
 # Refer to https://graia.readthedocs.io/ariadne/quickstart/
@@ -65,6 +67,19 @@ async def handle_message(target: Union[Friend, Group], session_id: str, message:
                 return config.response.rollback_success + '\n' + resp
             return config.response.rollback_fail
 
+        if message.strip().startswith(config.stable_diffusion.keyword):
+            params = message.strip().strip(config.stable_diffusion.keyword)
+            if params:
+                try:
+                    data = json.loads(params)
+                except Exception as e:
+                    logger.debug(e)
+                    logger.debug(params)
+                    return '解析参数失败'
+                payload = params
+            else:
+                payload = None
+            return await get_image(config.stable_diffusion.url, payload=payload, authorization=config.stable_diffusion.auth)
         
         # 正常交流
         resp = await session.get_chat_response(message)
@@ -82,19 +97,27 @@ async def friend_message_listener(app: Ariadne, friend: Friend, source: Source, 
     if friend.id == config.mirai.qq:
         return
     response = await handle_message(friend, f"friend-{friend.id}", chain.display, source)
-    await app.send_message(friend, response, quote=source if config.response.quote else False)
+    if chain.display.strip().startswith(config.stable_diffusion.keyword) and response.startswith('data:image/png;base64,'):
+        b = BytesIO(base64.b64decode(response.split(",",1)[1]))
+        await app.send_message(friend, Image(data_bytes=b.getvalue()), quote=source)
+    else:
+        await app.send_message(friend, response, quote=source if config.response.quote else False)
 
 GroupTrigger = Annotated[MessageChain, MentionMe(config.trigger.require_mention != "at"), DetectPrefix(config.trigger.prefix)] if config.trigger.require_mention != "none" else Annotated[MessageChain, DetectPrefix(config.trigger.prefix)]
 
 @app.broadcast.receiver("GroupMessage")
 async def group_message_listener(group: Group, source: Source, chain: GroupTrigger):
     response = await handle_message(group, f"group-{group.id}", chain.display, source)
-    event = await app.send_message(group, response)
-    if event.source.id < 0:
-        img = text_to_image(text=response)
-        b = BytesIO()
-        img.save(b, format="png")
-        await app.send_message(group, Image(data_bytes=b.getvalue()), quote=source if config.response.quote else False)
+    if chain.display.strip().startswith(config.stable_diffusion.keyword) and response.startswith('data:image/png;base64,'):
+        b = BytesIO(base64.b64decode(response.split(",",1)[1]))
+        await app.send_message(group, Image(data_bytes=b.getvalue()), quote=source)
+    else:
+        event = await app.send_message(group, response)
+        if event.source.id < 0:
+            img = text_to_image(text=response)
+            b = BytesIO()
+            img.save(b, format="png")
+            await app.send_message(group, Image(data_bytes=b.getvalue()), quote=source if config.response.quote else False)
 
 @app.broadcast.receiver("NewFriendRequestEvent")
 async def on_friend_request(event: NewFriendRequestEvent):

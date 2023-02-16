@@ -65,6 +65,10 @@ class TextToImage(BaseModel):
     offset_y: int = 50
     """纵坐标"""
 
+class StableDiffusion(BaseModel):
+    url: str = ""
+    auth: str = ""
+    keyword: str = "来张瑟图"
 
 class Trigger(BaseModel):
     prefix: List[str] = [""]
@@ -128,6 +132,7 @@ class Config(BaseModel):
     response: Response = Response()
     system: System = System()
     presets: Preset = Preset()
+    stable_diffusion: StableDiffusion = StableDiffusion()
 
     def load_preset(self, keyword):
         try:
