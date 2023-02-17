@@ -66,6 +66,11 @@ async def handle_message(target: Union[Friend, Group], session_id: str, message:
             if resp:
                 return config.response.rollback_success + '\n' + resp
             return config.response.rollback_fail
+        
+        # 重载stable-diffusion
+        if message.strip() == config.stable_diffusion.reload_config:
+            chatbot.config = Config.load_config()
+            return '重载成功'
 
         if message.strip().startswith(config.stable_diffusion.keyword):
             params = message.strip().strip(config.stable_diffusion.keyword)
@@ -79,7 +84,7 @@ async def handle_message(target: Union[Friend, Group], session_id: str, message:
                 payload = params
             else:
                 payload = None
-            return await get_image(config.stable_diffusion.url, payload=payload, authorization=config.stable_diffusion.auth)
+            return await get_image(chatbot.config.stable_diffusion.url, payload=payload, authorization=chatbot.config.stable_diffusion.auth)
         
         # 正常交流
         resp = await session.get_chat_response(message)

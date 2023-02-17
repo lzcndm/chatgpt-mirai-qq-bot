@@ -69,6 +69,7 @@ class StableDiffusion(BaseModel):
     url: str = ""
     auth: str = ""
     keyword: str = "来张瑟图"
+    reload_config: str = "重载stable-diffusion"
 
 class Trigger(BaseModel):
     prefix: List[str] = [""]
