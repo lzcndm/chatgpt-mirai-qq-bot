@@ -251,3 +251,4 @@ api_key = "一串 sk- 开头的字符串"
 如果你觉得本项目对你有帮助的话，欢迎点一个 Star!  
 
 [![Star History Chart](https://api.star-history.com/svg?repos=lss233/chatgpt-mirai-qq-bot&type=Timeline)](https://star-history.com/#lss233/chatgpt-mirai-qq-bot&Timeline)
+
